@@ -22,6 +22,7 @@ body {
     box-shadow:0 10px 30px rgba(0,0,0,0.5);
     max-width:500px;
     width:100%;
+    position:relative;
 }
 h1{text-align:center; margin-bottom:25px;}
 label{
@@ -45,29 +46,44 @@ button{
     transition:0.3s;
 }
 button:hover{opacity:0.9;}
-#password{
+#passwords{
     margin-top:15px;
-    font-size:18px;
-    padding:12px;
-    width:100%;
-    border-radius:12px;
-    background:#111827;
-    text-align:center;
-    word-break:break-all;
-    position:relative;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
 }
-#copyBtn{
-    position:absolute;
-    right:10px;
-    top:50px;
+.password-item{
+    background:#111827;
+    border-radius:12px;
+    padding:10px 14px;
+    position:relative;
+    font-size:18px;
+    word-break:break-all;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.copyOne{
     background:#2563eb;
     border:none;
-    padding:10px 8px;
-    border-radius:8px;
+    width:22px;
+    height:22px;
+    border-radius:6px;
     cursor:pointer;
-    font-size:12px;
+    font-size:0;
+    position:relative;
 }
-#copyBtn:hover{opacity:0.9;}
+.copyOne::before{
+    content:"📋";
+    font-size:13px;
+    position:absolute;
+    top:2px;
+    left:3px;
+}
+.copyAll{
+    margin-top:10px;
+    background:#16a34a;
+}
 .feedback{
     position:absolute;
     top:-25px;
@@ -84,9 +100,14 @@ button:hover{opacity:0.9;}
 
 <div class="container">
 <h1>Password Gen</h1>
-<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="miw4n" data-color="#FFDD00" data-emoji="🧋"  data-font="Cookie" data-text="Buy me a bubble tea" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
+
+<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
+ data-name="bmc-button" data-slug="miw4n" data-color="#FFDD00"
+ data-emoji="🧋"  data-font="Cookie" data-text="Buy me a bubble tea"
+ data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff"></script>
 
 <label>Size : <input type="number" id="length" value="12" min="4" max="128"></label>
+<label>Nombre de mots de passe : <input type="number" id="count" value="5" min="1" max="50"></label>
 
 <label><input type="checkbox" id="uppercase" checked> Uppercase (A, B, C, ...)</label>
 <label><input type="checkbox" id="lowercase" checked> Lowercase (a, b, c, ...)</label>
@@ -97,23 +118,20 @@ button:hover{opacity:0.9;}
 <label><input type="checkbox" id="special"> Special (!, $, %, ...)</label>
 <label><input type="checkbox" id="brackets"> Brackets ([, ], {, }, (, ))</label>
 
-
 <label>Caractères personnalisés : <input type="text" id="customChars" placeholder="ex: @#"></label>
-<button id="generate">Generate Password</button>
+<button id="generate">Generate Passwords</button>
 
-<div id="password">Pass
-  <button id="copyBtn">Copy</button> 
-</div>
+<div id="passwords"></div>
+<button id="copyAll" class="copyAll" style="display:none;">Copy All</button>
 
-    <div class="feedback" id="feedback" style="display:none;">Done !</div>
-</div>
+<div class="feedback" id="feedback" style="display:none;">Done !</div>
 </div>
 
 <script>
 const generateBtn=document.getElementById('generate');
-const passwordDisplay=document.getElementById('password');
-const copyBtn=document.getElementById('copyBtn');
+const passwordsContainer=document.getElementById('passwords');
 const feedback=document.getElementById('feedback');
+const copyAllBtn=document.getElementById('copyAll');
 
 function generatePassword(){
     const length=parseInt(document.getElementById('length').value);
@@ -128,24 +146,47 @@ function generatePassword(){
     if(document.getElementById('brackets').checked) chars+='[]{}()';
     chars+=document.getElementById('customChars').value;
 
-    if(chars.length===0){ passwordDisplay.childNodes[0].nodeValue='⚠️ Sélectionnez au moins un type de caractère'; return;}
+    if(chars.length===0) return '⚠️ Aucun caractère sélectionné';
 
     let password='';
     for(let i=0;i<length;i++){
         password+=chars[Math.floor(Math.random()*chars.length)];
     }
-    passwordDisplay.childNodes[0].nodeValue=password;
+    return password;
 }
 
-generateBtn.addEventListener('click', generatePassword);
+function generateMultiple(){
+    const count=parseInt(document.getElementById('count').value);
+    passwordsContainer.innerHTML='';
+    const allPasswords=[];
+    for(let i=0;i<count;i++){
+        const pwd=generatePassword();
+        allPasswords.push(pwd);
 
-copyBtn.addEventListener('click', ()=>{
-    const pwd=passwordDisplay.childNodes[0].nodeValue;
-    navigator.clipboard.writeText(pwd).then(()=>{
-        feedback.style.display='block';
-        setTimeout(()=>feedback.style.display='none',1500);
-    });
-});
+        const item=document.createElement('div');
+        item.classList.add('password-item');
+        item.innerHTML=`
+            <span>${pwd}</span>
+            <button class="copyOne" title="Copier"></button>
+        `;
+        item.querySelector('.copyOne').addEventListener('click',()=>{
+            navigator.clipboard.writeText(pwd).then(showFeedback);
+        });
+        passwordsContainer.appendChild(item);
+    }
+    copyAllBtn.style.display='block';
+    copyAllBtn.onclick=()=>{
+        // Utiliser des vrais retours à la ligne (pour lisibilité)
+        navigator.clipboard.writeText(allPasswords.join('\n')).then(showFeedback);
+    };
+}
+
+function showFeedback(){
+    feedback.style.display='block';
+    setTimeout(()=>feedback.style.display='none',1500);
+}
+
+generateBtn.addEventListener('click',generateMultiple);
 </script>
 
 </body>
